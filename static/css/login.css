@@ -1,0 +1,17 @@
+.mdl-cell{
+	text-align: center;
+	margin: auto;
+}
+
+.mdl-grid{
+	margin-top: 10%;
+}
+
+h3{
+	font-family: "Roboto";
+	font-weight: "Thin";
+}
+
+.hidden{
+	display: none;
+}
