@@ -17,7 +17,7 @@ def login():
 def home():
     return send_from_directory('static/html', "home.html")
 
-@app.route('/home')
+@app.route('/profile')
 def profile():
     return send_from_directory('static/html', "profile.html")
 
