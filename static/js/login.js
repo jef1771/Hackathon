@@ -8,7 +8,7 @@ function login(){
         return;
     }
 
-    $.post("/login", {"user": user, "pass": pass}, function(data){
+    $.post("/login", {user: user, pass: pass}, function(data){
         console.log(data);
         $(".login-alert").removeClass("hidden");
         $(".login-alert").html("Incorrect Username or Password");
@@ -18,14 +18,14 @@ function login(){
 function signup(){
     var user = $(".signup-name").val();
     var pass = $(".signup-password").val();
-
+    //why not just use required attribute?
     if(user == "" || pass == ""){
         $(".signup-alert").removeClass("hidden");
         $(".signup-alert").html("Please Fill Out all Fields!");
         return;
     }
 
-    $.post("/signup", {"user": user, "pass": pass}, function(data){
+    $.post("/signup", {email: email, user: user, pass: pass}, function(data){
         console.log(data);
         $(".signup-alert").removeClass("hidden");
         $(".signup-alert").html("User with that name already exists!");
@@ -51,7 +51,7 @@ $(document).ready(function() {
     $.post("/login", function(data){
         console.log(data);
     });
-	
+
 });
 
 
