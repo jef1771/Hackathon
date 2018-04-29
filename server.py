@@ -1,5 +1,4 @@
 from flask import Flask, request, send_from_directory, Response, redirect, url_for, g
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -161,6 +160,8 @@ class Contributor(Base):
 
     def __repr__(self):
         return '<Item: %r: Contributor %r for project %r>' % self.id, self.user, self.project
+
+
 # """
 # End DB Objects
 # """
@@ -173,6 +174,11 @@ class Contributor(Base):
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
+
+
+def get_users_projects(username):
+
+    return
 
 
 def is_unique_name(username):
