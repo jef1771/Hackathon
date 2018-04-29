@@ -1,15 +1,31 @@
 from flask import Flask, request, send_from_directory, Response, redirect, url_for, g
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+import os
 from functools import wraps
-import sqlite3
-import sys
-import logging
+
 
 app = Flask(__name__)
-DATABASE = 'database.db'
+app.debug = True
+app.secret_key = "Whoop$"
 
-"""
-   ADD ROUTES HERE FOR SPECIFIC PAGES
-"""
+database = os.getcwd() + '/database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+engine = create_engine('sqlite:///'+database)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+db_session = scoped_session(sessionmaker(autocommit=False,
+                                         autoflush=False,
+                                         bind=engine))
+Base = declarative_base()
+Base.query = db_session.query_property()
+
+def init_db():
+    Base.metadata.create_all(bind=engine)
+# """
+#    ADD ROUTES HERE FOR SPECIFIC PAGES
+# """
 
 
 @app.route('/')
@@ -32,21 +48,21 @@ def profile():
     return send_from_directory('static/html', "profile.html")
 
 
-"""
-   END SPECIFIC PAGES
-"""
-
-"""
-   send_js and send_css will catch all requests
-   for css or js files as long as the inclusion
-   starts with /css or /js in the html:
-
-   CSS:
-   <link href="/css/YOUR_STYLE_SHEET.css" rel="stylesheet">
-
-   JS:
-   <script src="/js/YOUR_SCRIPT.js"></script>
-"""
+# """
+#    END SPECIFIC PAGES
+# """
+#
+# """
+#    send_js and send_css will catch all requests
+#    for css or js files as long as the inclusion
+#    starts with /css or /js in the html:
+#
+#    CSS:
+#    <link href="/css/YOUR_STYLE_SHEET.css" rel="stylesheet">
+#
+#    JS:
+#    <script src="/js/YOUR_SCRIPT.js"></script>
+# """
 
 
 @app.route('/js/<path:path>')
@@ -64,13 +80,13 @@ def send_image(path):
     return send_from_directory('static/images', path)
 
 
-"""
-   END CSS AND JAVASCRIPT
-"""
-
-"""
-   DATA ROUTES
-"""
+# """
+#    END CSS AND JAVASCRIPT
+# """
+#
+# """
+#    DATA ROUTES
+# """
 
 
 @app.route('/login', methods=['POST'])
@@ -81,18 +97,16 @@ def login_post():
     # as the response
     username = request.form["user"]
     password = request.form["pass"]
-    return send_from_directory('home.html')
+    return send_from_directory('static/html', "home.html")
 
 
 @app.route('/signup', methods=['POST'])
 def signup():
     try:
-        conn = get_connection()
-        email = "fuck"
         username = request.form["user"]
         password = request.form["pass"]
-        if is_unique_name(conn, username):
-            create_new_user(conn, email, username, password)
+        if is_unique_name(username):
+            create_new_user(username, password)
             return "u all signed in!"
         else:
             return Response("that shit taken")
@@ -101,71 +115,82 @@ def signup():
         return Response("Missing parameter from form.")
     except BaseException as err:
         print(err.args[0])
-    finally:
-        close_connection()
-
-    return Response(
-        "OOPSIE WOOPSIE!! Uwu We made a fucky wucky!! A wittle fucko boingo! The code monkeys at our headquarters are working VEWY HAWD to fix this!")
 
 
-"""
-   END DATA ROUTES
-"""
-
-"""
-DB
-"""
+    return Response("OOPSIE WOOPSIE!! Uwu We made a fucky wucky!! A wittle fucko boingo! The code monkeys at our headquarters are working VEWY HAWD to fix this!")
 
 
-def is_unique_name(conn, username):
+# """
+#    END DATA ROUTES
+# """
+#
+# """
+# DB Objects
+# """
+
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(80), unique=True, nullable=False)
+    email = Column(String(120), unique=True, nullable=True)
+    skills = Column(String(1000), unique=False, nullable=True)
+    password = Column(String(20), unique=False, nullable=False)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+
+class Project(Base):
+    __tablename__ = 'projects'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(80), unique=True, primary_key=True)
+    owner = Column(Integer, ForeignKey('users.id'), nullable=False)
+    email = Column(String(120), unique=True, nullable=True)
+    skills = Column(String(1000), unique=False, nullable=True)
+
+    def __repr__(self):
+        return '<Project %r>' % self.username
+
+
+class Contributor(Base):
+    __tablename__ = 'contributors'
+    id = Column(Integer, primary_key=True)
+    user = Column(Integer, ForeignKey('users.id'), nullable=False)
+    project = Column(Integer, ForeignKey('projects.id'), nullable=True)
+
+    def __repr__(self):
+        return '<Item: %r: Contributor %r for project %r>' % self.id, self.user, self.project
+# """
+# End DB Objects
+# """
+
+# """
+# DB Functions
+# """
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
+
+
+def is_unique_name(username):
     try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1 FROM users WHERE username = ?", (username,))
-        username_exists = cursor.fetchall()
-        if not username_exists:
-            username_exists = 0
+        return User.query.filter(User.username == username).first() is None
     except BaseException as err:
         print(err.args[0])
 
-    return username_exists == 0
+    return False
 
 
-def create_new_user(conn, email, username, password):
+def create_new_user(username, password):
     try:
-        cursor = conn.cursor()
-        cursor.execute('''INSERT INTO users (email, username, password, skills) VALUES (?, ?, ?, ?)''',
-                       (email, username, password, "I like to party!"))
-        conn.commit()
-    finally:
-        cursor.close()
-
-
-def get_connection():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        init_db(db)
-    return db
-
-
-def close_connection():
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-
-
-def init_db(db):
-    with app.app_context():
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-
-def query_db(query, args=(), one=False):
-    cur = get_connection().execute(query, args)
-    rv = cur.fetchall()
-    cur.close()
-    return (rv[0] if rv else None) if one else rv
+        new_user = User(username=username, password=password, skills="I like to party!")
+        db_session.add(new_user)
+        db_session.commit()
+    except BaseException as err:
+        print(err.args[0])
 
 
 def requires_auth(f):
@@ -180,7 +205,7 @@ def requires_auth(f):
 
 
 def authenticate():
-    """Sends a 401 response that enables basic auth"""
+    #"""Sends a 401 response that enables basic auth"""
     return Response(
         'Could not verify your access level for that URL.\n'
         'You have to login with proper credentials', 401,
@@ -193,4 +218,6 @@ def check_auth(username, password):
 
 
 if __name__ == '__main__':
+    init_db()
     app.run()
+

@@ -8,7 +8,7 @@ function login(){
         return;
     }
 
-    $.post("/login", {user: user, pass: pass}, function(data){
+    $.post("/login", {"user": user, "pass": pass}, function(data){
         console.log(data);
         $(".login-alert").removeClass("hidden");
         $(".login-alert").html("Incorrect Username or Password");
@@ -25,7 +25,7 @@ function signup(){
         return;
     }
 
-    $.post("/signup", {email: email, user: user, pass: pass}, function(data){
+    $.post("/signup", {"user": user, "pass": pass}, function(data){
         console.log(data);
         $(".signup-alert").removeClass("hidden");
         $(".signup-alert").html("User with that name already exists!");
