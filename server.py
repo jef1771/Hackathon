@@ -236,6 +236,29 @@ def create_new_user(username, password):
         return redirect(url_for('.login'))
 
 
+def add_user_as_contributor(user_id, project_id):
+    try:
+        new_contributor = Contributor(user=user_id, project=project_id)
+        db_session.add(new_contributor)
+        db_session.commit()
+        return new_contributor
+    except BaseException as err:
+        print(err.args[0])
+        flash("Error adding user as contributor, please try again.")
+        return redirect(url_for('.home'))
+
+
+def create_new_project(title, user_id, email="", skills=""):
+    try:
+        new_project = Project(title=title, owner=user_id, email=email, skills=skills)
+        db_session.add(new_project)
+        db_session.commit()
+    except BaseException as err:
+        print(err.args[0])
+        flash("Error adding user as contributor, please try again.")
+        return redirect(url_for('.home'))
+
+
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
